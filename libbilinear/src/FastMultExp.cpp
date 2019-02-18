@@ -95,6 +95,7 @@ GT fastMultExp_de_Rooij(
         size_t e_next = heap[0]; // the index of the next max exponent
 
         // TODO: optimize this into a single RELIC op if possible (check BNT division API in RELIC)
+        // i.e., use https://github.com/relic-toolkit/relic/blob/master/include/relic_bn.h#L833
         t[e_max] = t[e_max] % t[e_next];
         BNT q = t[e_max];
         q.DivideBy(t[e_next]);
