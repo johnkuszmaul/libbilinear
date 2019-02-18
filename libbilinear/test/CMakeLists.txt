@@ -2,6 +2,7 @@ set(bilinear_test_sources
   ElementSizesTest.cpp
   SerializeTest.cpp
   BasicViabilityTest.cpp
+  TestFastMultExpDeRooij.cpp
 )
 
 foreach(appSrc ${bilinear_test_sources})

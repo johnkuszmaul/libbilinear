@@ -26,3 +26,8 @@ template<class GT>
 GT fastMultExp(
     const std::vector<GT>& a, 
     const std::vector<BNT>& e, int maxBits);
+
+template<class GT>
+GT fastMultExp_de_Rooij(
+    const std::vector<GT>& a, 
+    const std::vector<BNT>& e, int maxBits);
