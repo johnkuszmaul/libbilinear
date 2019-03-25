@@ -71,6 +71,7 @@ int BilinearAppMain(const Library& lib, const std::vector<std::string>& args) {
     numIters = std::stoi(args[3]);
 
     //srand(seed);
+    conf_print();
 
     switch(type) {
         case FAST_MULT_COMPARE:
