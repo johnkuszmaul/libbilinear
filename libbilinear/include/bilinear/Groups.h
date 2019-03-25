@@ -201,6 +201,10 @@ public:
         return bn_cmp(n, rhs.n) == CMP_EQ;
     }
 
+    bool operator==(const dig_t& rhs) const {
+        return bn_cmp_dig(n, rhs) == CMP_EQ;
+    }
+
     bool operator!=(const BNT& rhs) const {
         return bn_cmp(n, rhs.n) != CMP_EQ;
     }

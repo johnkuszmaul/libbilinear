@@ -103,7 +103,7 @@ void testBNTbits() {
     //BNT n(4);
     int a = 0;
     int bits = n.getBits();
-    assertLessThanOrEqual(static_cast<size_t>(bits), (sizeof a) * 8);
+    testAssertLessThanOrEqual(static_cast<size_t>(bits), (sizeof a) * 8);
 
     //for(int i = bits - 1; i >= 0; i--) {
     for(int i = 0; i < bits; i++) {
@@ -117,7 +117,7 @@ void testBNTbits() {
 
     logtrace << n << " =?= " << a << endl;
 
-    assertEqual(static_cast<int>(n.toDigit()), a);
+    testAssertEqual(static_cast<int>(n.toDigit()), a);
 }
 
 template<class GT>
@@ -136,21 +136,21 @@ void testAddMult() {
 
     r1 = GT::Add(x, y);
     r2 = x; r2.Add(y);
-    assertEqual(r1, r2);
+    testAssertEqual(r1, r2);
 
     r1 = GT::Times(x, e1);
     r2 = x; r2.Times(e1);
-    assertEqual(r1, r2);
+    testAssertEqual(r1, r2);
 
     r1 = GT::Double(x);
     r2 = x; r2.Double();
     r3 = GT::Add(x, x);
-    assertEqual(r1, r2);
-    assertEqual(r1, r3);
+    testAssertEqual(r1, r2);
+    testAssertEqual(r1, r3);
 
     r1 = GT::TimesTwice(x, e1, y, e2);
     r2 = GT::Add(GT::Times(x, e1), GT::Times(y, e2));
-    assertEqual(r1, r2);
+    testAssertEqual(r1, r2);
 }
 
 template<class GT>
@@ -168,16 +168,16 @@ void testFastMultExp() {
 
     std::vector<GT> a;
     std::vector<BNT> e;
-    a.resize(static_cast<size_t>(n) + 1);
-    e.resize(static_cast<size_t>(n) + 1);
+    a.resize(static_cast<size_t>(n));
+    e.resize(static_cast<size_t>(n));
 
     for(size_t i : s) {
         a[i].Random();
         e[i].RandomMod(Library::Get().getGroupOrder());
     }
 
-    assertEqual(r1, GT::Identity());
-    assertEqual(r2, GT::Identity());
+    testAssertEqual(r1, GT::Identity());
+    testAssertEqual(r2, GT::Identity());
 
     // Fast way
     r1 = fastMultExp<GT>(s, a, e, maxBits);
@@ -192,7 +192,7 @@ void testFastMultExp() {
     }
 
     // Same way?
-    assertEqual(r1, r2);
+    testAssertEqual(r1, r2);
 }
 
 void testFastModulo(const BNT& fieldOrder) {
@@ -207,25 +207,25 @@ void testFastModulo(const BNT& fieldOrder) {
 
     a.SlowModulo(fieldOrder);
     b.FastModulo(fieldOrder, u);
-    assertEqual(a, b);
+    testAssertEqual(a, b);
 
     u = BNT::FastModuloPrePmers(fieldOrder);
     pmers.FastModuloPmers(fieldOrder, u);
-    assertEqual(a, pmers);
+    testAssertEqual(a, pmers);
 
     u = BNT::FastModuloPreMonty(fieldOrder);
     monty.FastModuloMonty(fieldOrder, u);
-    assertEqual(a, monty);
+    testAssertEqual(a, monty);
 
     u = BNT::FastModuloPreBarrett(fieldOrder);
     barrt.FastModuloBarrett(fieldOrder, u);
-    assertEqual(a, barrt);
+    testAssertEqual(a, barrt);
 }
 
 void testInvertModPrimeHelper(const BNT& a, const BNT& fieldOrder) {
     BNT b = a.invertModPrime(fieldOrder); 
 
-    assertEqual((a*b).SlowModulo(fieldOrder), BNT::One());
+    testAssertEqual((a*b).SlowModulo(fieldOrder), BNT::One());
 }
 
 void testInvertModP(const BNT& fieldOrder) {
