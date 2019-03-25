@@ -75,11 +75,11 @@ int BilinearAppMain(const Library& lib, const std::vector<std::string>& args) {
     switch(type) {
         case FAST_MULT_COMPARE:
         {
-            loginfo << "Benchmarking " << n << " exponentiations in G1 (fast batch + naive)..." << endl;
+            loginfo << "Benchmarking " << n << " exponentiations in G1 (fast batch + deRooij + naive)..." << endl;
             benchFastMultExp<G1T>(numIters, n);
             loginfo << endl;
             
-            loginfo << "Benchmarking " << n << " exponentiations in G2 (fast batch + naive)..." << endl;
+            loginfo << "Benchmarking " << n << " exponentiations in G2 (fast batch + deRooij + naive)..." << endl;
             benchFastMultExp<G2T>(numIters, n);
             break;
         }
@@ -102,7 +102,7 @@ int BilinearAppMain(const Library& lib, const std::vector<std::string>& args) {
 
 template<class GT>
 void benchFastMultExp(int numIters, int n, bool skipNaive) {
-    GT r1, r2;
+    GT r1, r2, r3;
     int maxBits = Library::Get().getGroupOrderNumBits();
     logdbg << "Max bits: " << maxBits << endl;
 
@@ -119,9 +119,10 @@ void benchFastMultExp(int numIters, int n, bool skipNaive) {
 
     assertEqual(r1, GT::Identity());
     assertEqual(r2, GT::Identity());
+    assertEqual(r3, GT::Identity());
 
     // Slow way
-    AveragingTimer t1("naiveExp:    ");
+    AveragingTimer t1("naiveExp    ");
     if(skipNaive == false) {
         for(int i = 0; i < numIters; i++) {
             t1.startLap();
@@ -139,24 +140,34 @@ void benchFastMultExp(int numIters, int n, bool skipNaive) {
     }
 
     // Fast way
-    AveragingTimer t2("fastMultExp: ");
+    AveragingTimer t2("fastMultExp ");
     for(int i = 0; i < numIters; i++) {
         t2.startLap();
         r1 = fastMultExp<GT>(a, e, maxBits);
         t2.endLap();
     }
 
+    // DeRooij way
+    AveragingTimer t3("deRooijExp  ");
+    for(int i = 0; i < numIters; i++) {
+        t3.startLap();
+        r3 = fastMultExp_de_Rooij<GT>(a, e, maxBits);
+        t3.endLap();
+    }
+
     if(skipNaive == false) {
         loginfo << t1 << endl;
-        loginfo << " * Average per exponentiation: " << t1.averageLapTime() / n << endl;
     }
     loginfo << t2 << endl;
-    loginfo << " * Average per exponentiation: " << t2.averageLapTime() / n << endl;
+    loginfo << t3 << endl;
 
     if(skipNaive == false) {
         // Same way?
         if(r1 != r2) {
-            throw std::runtime_error("Incorrect results returned by one of the implementations.");
+            throw std::runtime_error("Incorrect results returned by one of the implementations: naive or fast.");
+        }   
+        if(r1 != r3) {
+            throw std::runtime_error("Incorrect results returned by one of the implementations: naive or deRooij.");
         }   
     }
 }

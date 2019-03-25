@@ -12,8 +12,9 @@
 #include "bilinear/FastMultExp.h"
 #include "bilinear/Groups.h"
 
-#include "xutils/Log.h"
-#include "xassert/XAssert.h"
+#include <xutils/Log.h>
+#include <xutils/Timer.h>
+#include <xassert/XAssert.h>
 
 using std::endl;
 using namespace Bilinear;
@@ -67,6 +68,11 @@ GT fastMultExp_de_Rooij(
     const std::vector<GT>& bases, 
     const std::vector<BNT>& exps, int maxBits)
 {
+    CumulativeTimer all;
+    CumulativeTimer div, exp, add;
+    CumulativeTimer overhead;
+
+    all.start();
     (void) maxBits;
 
     if(exps.size() != bases.size()) {
@@ -76,6 +82,7 @@ GT fastMultExp_de_Rooij(
         throw std::runtime_error("give me some exponents and bases man");
     }
 
+    overhead.start();
     std::vector<GT> b(bases.begin(), bases.end());
     std::vector<BNT> t(exps.begin(), exps.end());
 
@@ -86,14 +93,20 @@ GT fastMultExp_de_Rooij(
     };
     std::iota(heap.begin(), heap.end(), 0); // puts 0, 1, ..., e.size() - 1
     std::make_heap(heap.begin(), heap.end(), comp);
+    overhead.end();
 
-    logdbg << "Built a max heap over the " << heap.size() << " exponent(s)" << std::endl;
+    //logdbg << "Built a max heap over the " << heap.size() << " exponent(s)" << std::endl;
 
     // get the index of the max exponent
+    BNT q;
+    BNT qAvg = BNT::Zero();
     size_t e_max;
+    overhead.start();
     std::pop_heap(heap.begin(), heap.end(), comp);
     e_max = heap.back();
     heap.pop_back();
+    overhead.end();
+    size_t numLaps = 0;
     while(heap.size() > 0) {
         size_t e_next = heap[0]; // the index of the next max exponent
 
@@ -101,33 +114,58 @@ GT fastMultExp_de_Rooij(
             break;
         }
 
-        testAssertGreaterThanOrEqual(t[e_max], t[e_next]);
+        assertGreaterThanOrEqual(t[e_max], t[e_next]);
 
         // First, q = t_max / t_next
-        BNT q = t[e_max];
-        q.DivideBy(t[e_next]);
-
         // Second, t_max = t_max mod t_next
-        // TODO: optimize this into a single RELIC op if possible (check BNT division API in RELIC)
-        // i.e., use https://github.com/relic-toolkit/relic/blob/master/include/relic_bn.h#L833
-        t[e_max] = t[e_max] % t[e_next];
+        div.start();
+        bn_div_rem(q, t[e_max], t[e_max], t[e_next]);
+        div.end();
 
         // Third, b_next = (b_max ^ q) * b_next
-        b[e_next] = GT::Add(GT::Times(b[e_max], q), b[e_next]);
+        numLaps++;
+        qAvg = qAvg + q;
+
+        exp.start();
+        GT interm;
+        if(q == BNT::One()) {
+            interm = b[e_max];
+        } else {
+            interm = GT::Times(b[e_max], q);
+        }
+        exp.end();
+        add.start();
+        b[e_next] = GT::Add(interm, b[e_next]);
+        add.end();
 
         // push back the modified e_max
         if(t[e_max] != 0) {
+            overhead.start();
             heap.push_back(e_max);
             std::push_heap(heap.begin(), heap.end(), comp);
+            overhead.end();
         }
         
         // pop the next e_max
+        overhead.start();
         std::pop_heap(heap.begin(), heap.end(), comp);
         e_max = heap.back();
         heap.pop_back();
+        overhead.end();
     }
   
-    return GT::Times(b[e_max], t[e_max]);
+    GT res = GT::Times(b[e_max], t[e_max]);
+    all.end();
+    
+    loginfo << "All: " << all.getTotal() << endl;
+    loginfo << "OVR: " << overhead.getTotal() << endl;
+    loginfo << "   fraction: " << static_cast<double>(overhead.getTotal())/static_cast<double>(all.getTotal()) * 100.0 << "%" << std::endl;
+    loginfo << "Div: " << div.getTotal() << endl;
+    loginfo << "Add: " << add.getTotal() << endl;
+    loginfo << "Exp: " << exp.getTotal() << endl;
+    loginfo << "numLaps: " << numLaps << ", avg Q: " << qAvg << endl;
+
+    return res;
 }
 
 /**
