@@ -78,6 +78,8 @@ GT fastMultExp_de_Rooij(
     std::vector<GT> b(bases.begin(), bases.end());
     std::vector<BNT> t(exps.begin(), exps.end());
 
+    logdbg << "Building a max heap over the exponents" << std::endl;
+
     // build a max heap over the exponents
     std::vector<size_t> heap(t.size());
     auto comp = [&t](const size_t lhs, const size_t rhs) {
@@ -94,11 +96,29 @@ GT fastMultExp_de_Rooij(
     while(heap.size() > 0) {
         size_t e_next = heap[0]; // the index of the next max exponent
 
+        if (t[e_next] <= 0) {
+          logdbg << "Done; t[e_next] = " << t[e_next] << std::endl;
+          break;
+        }
+
+        testAssertGreaterThanOrEqual(t[e_max], t[e_next]);
+
+        // First, q = t_max / t_next
+
+        BNT q = t[e_max];
+        logdbg << "Dividing t[e_max]by t[e_next]" << std::endl;
+        logdbg << "t[e_max] = " << q << std::endl;
+        logdbg << "t[e_next] = " << t[e_next] << std::endl;
+        q.DivideBy(t[e_next]);
+        logdbg << "Result: q = " << q << std::endl;        
+
+        // Second, t_max = t_max mod t_next
+        
         // TODO: optimize this into a single RELIC op if possible (check BNT division API in RELIC)
         // i.e., use https://github.com/relic-toolkit/relic/blob/master/include/relic_bn.h#L833
         t[e_max] = t[e_max] % t[e_next];
-        BNT q = t[e_max];
-        q.DivideBy(t[e_next]);
+
+        // Third, b_next = (b_max ^ q) * b_next
 
         b[e_next] = GT::Add(GT::Times(b[e_max], q), b[e_next]);
 
@@ -107,7 +127,7 @@ GT fastMultExp_de_Rooij(
             heap.push_back(e_max);
             std::push_heap(heap.begin(), heap.end(), comp);
         }
-
+        
         // pop the next e_max
         std::pop_heap(heap.begin(), heap.end(), comp);
         e_max = heap.back();
