@@ -124,7 +124,7 @@ GT fastMultExp_de_Rooij(
 
         // Third, b_next = (b_max ^ q) * b_next
         numLaps++;
-        qAvg = qAvg + q;
+        //qAvg = qAvg + q;
 
         exp.start();
         GT interm;
@@ -134,6 +134,7 @@ GT fastMultExp_de_Rooij(
             interm = GT::Times(b[e_max], q);
         }
         exp.end();
+
         add.start();
         b[e_next] = GT::Add(interm, b[e_next]);
         add.end();
@@ -157,12 +158,12 @@ GT fastMultExp_de_Rooij(
     GT res = GT::Times(b[e_max], t[e_max]);
     all.end();
     
-    loginfo << "All: " << all.getTotal() << endl;
-    loginfo << "OVR: " << overhead.getTotal() << endl;
+    loginfo << "All:  " << all.getTotal() << endl;
+    loginfo << "Heap: " << overhead.getTotal() << endl;
     loginfo << "   fraction: " << static_cast<double>(overhead.getTotal())/static_cast<double>(all.getTotal()) * 100.0 << "%" << std::endl;
-    loginfo << "Div: " << div.getTotal() << endl;
-    loginfo << "Add: " << add.getTotal() << endl;
-    loginfo << "Exp: " << exp.getTotal() << endl;
+    loginfo << "Div:  " << div.getTotal() << endl;
+    loginfo << "Add:  " << add.getTotal() << endl;
+    loginfo << "Exp:  " << exp.getTotal() << endl;
     loginfo << "numLaps: " << numLaps << ", avg Q: " << qAvg << endl;
 
     return res;
